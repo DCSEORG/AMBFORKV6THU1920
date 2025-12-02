@@ -1,0 +1,77 @@
+@page
+@model ExpenseManagement.Pages.EditExpenseModel
+@{
+    ViewData["Title"] = "Edit Expense";
+}
+
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div class="error-banner">
+        <div class="error-icon">⚠️</div>
+        <div class="error-content">
+            <strong>Error</strong>
+            <p>@Model.ErrorMessage</p>
+        </div>
+    </div>
+}
+
+<div class="page-container">
+    <header class="page-header">
+        <h1>Edit Expense</h1>
+        <a href="/Index" class="btn btn-secondary">← Back to Expenses</a>
+    </header>
+
+    @if (Model.Expense == null)
+    {
+        <div class="info-banner">
+            <div class="info-icon">ℹ️</div>
+            <div class="info-content">
+                <strong>Expense Not Found</strong>
+                <p>The expense you are trying to edit could not be found.</p>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="form-container">
+            <form method="post" class="expense-form">
+                <input type="hidden" name="ExpenseId" value="@Model.Expense.ExpenseId" />
+
+                <div class="form-group">
+                    <label for="Amount">Amount (£):</label>
+                    <input type="number" id="Amount" name="Input.Amount" step="0.01" min="0.01" required class="form-input" value="@Model.Expense.AmountGBP" />
+                </div>
+
+                <div class="form-group">
+                    <label for="ExpenseDate">Date:</label>
+                    <input type="date" id="ExpenseDate" name="Input.ExpenseDate" required class="form-input" value="@Model.Expense.ExpenseDate.ToString("yyyy-MM-dd")" />
+                </div>
+
+                <div class="form-group">
+                    <label for="CategoryId">Category:</label>
+                    <select id="CategoryId" name="Input.CategoryId" required class="form-select">
+                        @foreach (var category in Model.Categories)
+                        {
+                            <option value="@category.CategoryId" selected="@(Model.Expense.CategoryId == category.CategoryId)">@category.CategoryName</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="Description">Description:</label>
+                    <textarea id="Description" name="Input.Description" rows="4" class="form-textarea">@Model.Expense.Description</textarea>
+                </div>
+
+                <div class="form-info">
+                    <p><strong>Status:</strong> @Model.Expense.StatusName</p>
+                    <p><strong>Created:</strong> @Model.Expense.CreatedAt.ToString("dd/MM/yyyy HH:mm")</p>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                    <a href="/Index" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    }
+</div>
