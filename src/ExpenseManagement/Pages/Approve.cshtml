@@ -1,0 +1,109 @@
+@page
+@model ExpenseManagement.Pages.ApproveModel
+@{
+    ViewData["Title"] = "Approve Expenses";
+}
+
+@if (Model.ShowError)
+{
+    <div class="error-banner">
+        <div class="error-icon">⚠️</div>
+        <div class="error-content">
+            <strong>Database Connection Error</strong>
+            <p>@Model.ErrorMessage</p>
+            <small>Currently showing dummy data for demonstration purposes.</small>
+        </div>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(Model.SuccessMessage))
+{
+    <div class="success-banner">
+        <div class="success-icon">✓</div>
+        <div class="success-content">@Model.SuccessMessage</div>
+    </div>
+}
+
+<div class="page-container">
+    <header class="page-header">
+        <h1>Approve Expenses</h1>
+        <a href="/Index" class="btn btn-secondary">← Back to Expenses</a>
+    </header>
+
+    <div class="filter-section">
+        <p class="pending-info">Pending expenses: @Model.PendingExpenses.Count</p>
+        <form method="get" class="filter-form">
+            <div class="filter-group">
+                <label for="filter">Filter:</label>
+                <input type="text" id="filter" name="filter" value="@Model.Filter" placeholder="Search pending expenses..." class="filter-input" />
+            </div>
+            <button type="submit" class="btn btn-filter">Apply Filter</button>
+        </form>
+    </div>
+
+    <div class="expenses-table-container">
+        <table class="expenses-table">
+            <thead>
+                <tr>
+                    <th>Select</th>
+                    <th>Date</th>
+                    <th>Category</th>
+                    <th>Amount</th>
+                    <th>Employee</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.PendingExpenses.Any())
+                {
+                    @foreach (var expense in Model.PendingExpenses)
+                    {
+                        <tr class="expense-row">
+                            <td>
+                                <input type="checkbox" name="selectedExpenses" value="@expense.ExpenseId" class="expense-checkbox" />
+                            </td>
+                            <td>@expense.ExpenseDate.ToString("dd/MM/yyyy")</td>
+                            <td>@expense.CategoryName</td>
+                            <td class="amount">£@expense.AmountGBP.ToString("N2")</td>
+                            <td>@expense.UserName</td>
+                            <td class="description">@(expense.Description ?? "-")</td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="6" class="no-data">No pending expenses to approve</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (Model.PendingExpenses.Any())
+    {
+        <div class="approval-actions">
+            <form method="post" asp-page-handler="Approve" id="approveForm">
+                <input type="hidden" name="expenseIds" id="approveExpenseIds" />
+                <button type="button" class="btn btn-approve" onclick="submitSelected('approveForm', 'approveExpenseIds')">Approve Selected</button>
+            </form>
+            <form method="post" asp-page-handler="Reject" id="rejectForm">
+                <input type="hidden" name="expenseIds" id="rejectExpenseIds" />
+                <button type="button" class="btn btn-reject" onclick="submitSelected('rejectForm', 'rejectExpenseIds')">Reject Selected</button>
+            </form>
+        </div>
+    }
+</div>
+
+<script>
+function submitSelected(formId, hiddenFieldId) {
+    var checkboxes = document.querySelectorAll('input[name="selectedExpenses"]:checked');
+    if (checkboxes.length === 0) {
+        alert('Please select at least one expense.');
+        return;
+    }
+    var ids = Array.from(checkboxes).map(cb => cb.value).join(',');
+    document.getElementById(hiddenFieldId).value = ids;
+    document.getElementById(formId).submit();
+}
+</script>

@@ -1,0 +1,211 @@
+@page
+@model ExpenseManagement.Pages.ChatModel
+@{
+    ViewData["Title"] = "Chat";
+}
+
+<div class="page-container chat-page">
+    <header class="page-header">
+        <h1>💬 Expense Assistant</h1>
+        <a href="/Index" class="btn btn-secondary">← Back to Expenses</a>
+    </header>
+
+    @if (!Model.IsChatConfigured)
+    {
+        <div class="info-banner">
+            <div class="info-icon">ℹ️</div>
+            <div class="info-content">
+                <strong>GenAI Services Not Deployed</strong>
+                <p>Chat functionality is not available because GenAI services were not deployed.</p>
+                <p>To enable chat, run: <code>bash deploy-with-chat.sh</code></p>
+            </div>
+        </div>
+    }
+
+    <div class="chat-container">
+        <div class="chat-messages" id="chatMessages">
+            <div class="message assistant">
+                <div class="message-content">
+                    Hello! I'm your Expense Management Assistant. I can help you:
+                    <ul>
+                        <li>View and search expenses</li>
+                        <li>Check pending approvals</li>
+                        <li>Create new expenses</li>
+                        <li>Approve or reject expenses</li>
+                    </ul>
+                    How can I help you today?
+                </div>
+            </div>
+        </div>
+
+        <div class="chat-input-container">
+            <form id="chatForm" class="chat-form">
+                <textarea id="chatInput" class="chat-input" placeholder="Type your message..." rows="2" @(Model.IsChatConfigured ? "" : "disabled")></textarea>
+                <button type="submit" class="btn btn-send" @(Model.IsChatConfigured ? "" : "disabled")>Send</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    const chatMessages = document.getElementById('chatMessages');
+    const chatForm = document.getElementById('chatForm');
+    const chatInput = document.getElementById('chatInput');
+    const conversationHistory = [];
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function formatMessage(text) {
+        // First escape HTML to prevent XSS
+        let formatted = escapeHtml(text);
+        
+        // Then apply formatting
+        // Bold text
+        formatted = formatted.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        
+        // Handle numbered lists
+        const lines = formatted.split('\n');
+        let inOrderedList = false;
+        let inUnorderedList = false;
+        let result = [];
+        
+        for (let line of lines) {
+            const orderedMatch = line.match(/^\d+\.\s+(.+)$/);
+            const unorderedMatch = line.match(/^[-*]\s+(.+)$/);
+            
+            if (orderedMatch) {
+                if (!inOrderedList) {
+                    if (inUnorderedList) {
+                        result.push('</ul>');
+                        inUnorderedList = false;
+                    }
+                    result.push('<ol>');
+                    inOrderedList = true;
+                }
+                result.push(`<li>${orderedMatch[1]}</li>`);
+            } else if (unorderedMatch) {
+                if (!inUnorderedList) {
+                    if (inOrderedList) {
+                        result.push('</ol>');
+                        inOrderedList = false;
+                    }
+                    result.push('<ul>');
+                    inUnorderedList = true;
+                }
+                result.push(`<li>${unorderedMatch[1]}</li>`);
+            } else {
+                if (inOrderedList) {
+                    result.push('</ol>');
+                    inOrderedList = false;
+                }
+                if (inUnorderedList) {
+                    result.push('</ul>');
+                    inUnorderedList = false;
+                }
+                result.push(line);
+            }
+        }
+        
+        if (inOrderedList) result.push('</ol>');
+        if (inUnorderedList) result.push('</ul>');
+        
+        // Join with line breaks for non-list items
+        formatted = result.join('<br>');
+        
+        // Clean up excessive line breaks
+        formatted = formatted.replace(/(<br>)+/g, '<br>');
+        formatted = formatted.replace(/<br>(<[ou]l>)/g, '$1');
+        formatted = formatted.replace(/(<\/[ou]l>)<br>/g, '$1');
+        
+        return formatted;
+    }
+
+    function addMessage(content, role) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${role}`;
+        
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'message-content';
+        contentDiv.innerHTML = formatMessage(content);
+        
+        messageDiv.appendChild(contentDiv);
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function addLoadingMessage() {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message assistant loading';
+        messageDiv.id = 'loadingMessage';
+        
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'message-content';
+        contentDiv.innerHTML = '<span class="loading-dots">Thinking<span>.</span><span>.</span><span>.</span></span>';
+        
+        messageDiv.appendChild(contentDiv);
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function removeLoadingMessage() {
+        const loadingMessage = document.getElementById('loadingMessage');
+        if (loadingMessage) {
+            loadingMessage.remove();
+        }
+    }
+
+    chatForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const message = chatInput.value.trim();
+        if (!message) return;
+        
+        // Add user message
+        addMessage(message, 'user');
+        conversationHistory.push({ role: 'user', content: message });
+        chatInput.value = '';
+        
+        // Show loading
+        addLoadingMessage();
+        
+        try {
+            const response = await fetch('/api/Chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    message: message,
+                    history: conversationHistory.slice(-10) // Last 10 messages for context
+                })
+            });
+            
+            const data = await response.json();
+            
+            removeLoadingMessage();
+            
+            if (data.success) {
+                addMessage(data.message, 'assistant');
+                conversationHistory.push({ role: 'assistant', content: data.message });
+            } else {
+                addMessage(data.message || 'An error occurred. Please try again.', 'assistant');
+            }
+        } catch (error) {
+            removeLoadingMessage();
+            addMessage('An error occurred while connecting to the chat service. Please try again.', 'assistant');
+            console.error('Chat error:', error);
+        }
+    });
+
+    // Handle Enter key
+    chatInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            chatForm.dispatchEvent(new Event('submit'));
+        }
+    });
+</script>
