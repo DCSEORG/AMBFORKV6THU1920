@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Expense Management System</title>
+    <link rel="stylesheet" href="~/css/site.css" />
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-brand">
+            <a href="/Index">Expense Management System</a>
+        </div>
+        <div class="navbar-menu">
+            <a href="/Index" class="nav-link">Expenses</a>
+            <a href="/AddExpense" class="nav-link">Add Expense</a>
+            <a href="/Approve" class="nav-link">Approve</a>
+            <a href="/Chat" class="nav-link">💬 Chat</a>
+            <a href="/swagger" class="nav-link">API Docs</a>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        @RenderBody()
+    </main>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <p>&copy; @DateTime.Now.Year Expense Management System - Modernized with Azure</p>
+        </div>
+    </footer>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
