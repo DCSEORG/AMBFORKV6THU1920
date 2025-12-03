@@ -70,6 +70,9 @@ output managedIdentityClientId string = managedIdentity.outputs.managedIdentityC
 output managedIdentityName string = managedIdentity.outputs.managedIdentityName
 
 // GenAI outputs (null-safe for conditional deployment)
+#disable-next-line BCP318
 output openAIEndpoint string = deployGenAI ? genai.outputs.openAIEndpoint : ''
+#disable-next-line BCP318
 output openAIModelName string = deployGenAI ? genai.outputs.openAIModelName : ''
+#disable-next-line BCP318
 output searchEndpoint string = deployGenAI ? genai.outputs.searchEndpoint : ''

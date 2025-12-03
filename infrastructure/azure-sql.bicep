@@ -13,7 +13,8 @@ param adminObjectId string
 @description('Azure AD User Principal Name of the SQL Administrator')
 param adminLogin string
 
-@description('Principal ID of the Managed Identity for database access')
+@description('Principal ID of the Managed Identity for database access. Note: Database role assignment is handled post-deployment via Python scripts.')
+#disable-next-line no-unused-params
 param managedIdentityPrincipalId string
 
 var databaseName = 'Northwind'

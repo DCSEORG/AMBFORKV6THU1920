@@ -24,5 +24,8 @@ Thumbs.db
 *.tmp
 *.bak
 
+# Bicep compiled output
+infrastructure/*.json
+
 # Keep app.zip for deployment (do not ignore)
 # !app.zip
